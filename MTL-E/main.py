@@ -19,12 +19,9 @@ from multitask_data_collator import MultitaskTrainer, NLPDataCollator
 from multitask_eval import multitask_eval_fn
 from checkpoint_model import save_model
 from pathlib import Path
-import os
 
 
 logger = logging.getLogger(__name__)
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 try:
     nltk.data.find("tokenizers/punkt")
@@ -53,8 +50,6 @@ def main():
             data_files={
                 "train": "./dataset/ToxicBias/train.csv",
                 "validation": "./dataset/ToxicBias/val.csv",
-                # "train": str(args.htrain_file),
-                # "validation": str(args.hvalidation_file),
             },
         ),
         "stereotype": load_dataset(
@@ -62,24 +57,8 @@ def main():
             data_files={
                 "train": "./dataset/StereoSet/train.csv",
                 "validation": "./dataset/StereoSet/val.csv",
-                # "train": str(args.mtrain_file),
-                # "validation": str(args.mvalidation_file),
             },
         ),
-#         "irony": load_dataset(
-#             "multitask_dataloader.py",
-#             data_files={
-#                 "train": "../../data/mtl_data/irony/train.csv",
-#                 "validation": "../../data/mtl_data/irony/test.csv",
-#             },
-#         ),
-#         "sarcasm": load_dataset(
-#             "multitask_dataloader.py",
-#             data_files={
-#                 "train": "../../data/mtl_data/sarcasm/train.csv",
-#                 "validation": "../../data/mtl_data/sarcasm/test.csv",
-#             },
-#         ),
     }
 
     for task_name, dataset in dataset_dict.items():
@@ -89,7 +68,7 @@ def main():
 
     model_names = [args.model_name_or_path] * 2
     config_files = model_names
-#     for idx, task_name in enumerate(["bias", "stereotype"]):
+
     for idx, task_name in enumerate(["bias", "stereotype"]):
         model_file = Path(f"./{task_name}_model/pytorch_model.bin")
         config_file = Path(f"./{task_name}_model/config.json")
@@ -106,8 +85,6 @@ def main():
         model_type_dict={
             "bias": transformers.AutoModelForSequenceClassification,
             "stereotype": transformers.AutoModelForSequenceClassification,
-#             "irony": transformers.AutoModelForSequenceClassification,
-#             "sarcasm": transformers.AutoModelForSequenceClassification,
         },
         model_config_dict={
             "bias": transformers.AutoConfig.from_pretrained(
@@ -115,50 +92,19 @@ def main():
             ),
             "stereotype": transformers.AutoConfig.from_pretrained(
                 model_names[1], num_labels=2
-            ),
-#             "irony": transformers.AutoConfig.from_pretrained(
-#                 model_names[2], num_labels=2
-#             ),
-#             "sarcasm": transformers.AutoConfig.from_pretrained(
-#                 model_names[3], num_labels=2
-#             ),
+            )
         },
     )
 
-#     print(multitask_model.encoder.embeddings.word_embeddings.weight.data_ptr())
-#     print(
-#         multitask_model.taskmodels_dict[
-#             "hyperbole"
-#         ].roberta.embeddings.word_embeddings.weight.data_ptr()
-#     )
-#     print(
-#         multitask_model.taskmodels_dict[
-#             "metaphor"
-#         ].roberta.embeddings.word_embeddings.weight.data_ptr()
-#     )
-#     print(
-#         multitask_model.taskmodels_dict[
-#             "irony"
-#         ].roberta.embeddings.word_embeddings.weight.data_ptr()
-#     )
-#     print(
-#         multitask_model.taskmodels_dict[
-#             "sarcasm"
-#         ].roberta.embeddings.word_embeddings.weight.data_ptr()
-#     )
 
     convert_func_dict = {
         "bias": convert_to_features,
-        "stereotype": convert_to_features,
-#         "irony": convert_to_features,
-#         "sarcasm": convert_to_features,
+        "stereotype": convert_to_features
     }
 
     columns_dict = {
         "bias": ["input_ids", "attention_mask", "labels"],
         "stereotype": ["input_ids", "attention_mask", "labels"],
-#         "irony": ["input_ids", "attention_mask", "labels"],
-#         "sarcasm": ["input_ids", "attention_mask", "labels"],
     }
 
     features_dict = {}
@@ -199,20 +145,18 @@ def main():
             learning_rate=1e-5,
             do_train=True,
             num_train_epochs=args.num_train_epochs,
-            # Adjust batch size if this doesn't fit on the Colab GPU
             per_device_train_batch_size=args.per_device_train_batch_size,
-            save_steps=500
+            save_steps=500,
         ),
         data_collator=NLPDataCollator(),
         train_dataset=train_dataset,
     )
     trainer.train()
-
-    ## evaluate on given tasks
+    trainer.save_model(safe_serialization=False)
     multitask_eval_fn(multitask_model, args.model_name_or_path, dataset_dict)
 
-    ## save model for later use
     save_model(args.model_name_or_path, multitask_model)
+
 
 
 if __name__ == "__main__":
