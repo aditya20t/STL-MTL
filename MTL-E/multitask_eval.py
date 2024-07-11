@@ -10,7 +10,7 @@ import json
 def multitask_eval_fn(multitask_model, model_name, features_dict, batch_size=8):
     preds_dict = {}
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
     multitask_model.to(device)  # Ensure the model is on the correct device
 
     for task_name in ["bias", "stereotype"]:

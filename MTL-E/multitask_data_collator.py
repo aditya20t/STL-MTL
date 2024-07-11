@@ -7,6 +7,7 @@ from typing import List, Union, Dict
 import numpy as np
 import torch
 import transformers
+import os
 
 
 class NLPDataCollator:
@@ -147,3 +148,24 @@ class MultitaskTrainer(transformers.Trainer):
                 for task_name, task_dataset in self.train_dataset.items()
             }
         )
+    
+    def save_model(self, output_dir: str = None, _internal_call: bool = False, safe_serialization: bool = False):
+        """
+        Save the model, optionally using `safe_serialization=False` to handle shared tensors.
+        """
+        if output_dir is None:
+            output_dir = self.args.output_dir
+        self._save(output_dir, safe_serialization)
+
+    def _save(self, output_dir: str, safe_serialization: bool):
+        """
+        Save the model with or without `safe_serialization`.
+        """
+        os.makedirs(output_dir, exist_ok=True)
+        model_to_save = self.model.module if hasattr(self.model, "module") else self.model
+
+        if safe_serialization:
+            model_to_save.save_pretrained(output_dir)
+        else:
+            torch.save(model_to_save.state_dict(), os.path.join(output_dir, 'pytorch_model.bin'))
+            model_to_save.config.to_json_file(os.path.join(output_dir, 'config.json'))
