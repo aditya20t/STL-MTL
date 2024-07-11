@@ -2,3 +2,5 @@ Models/
 MTL-E/output/
 MTL-E/results/
 MTL-E/dataset/
+MTL-E/bias_model
+MTL-E/stereotype_model
