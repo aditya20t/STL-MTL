@@ -146,7 +146,7 @@ def main():
             do_train=True,
             num_train_epochs=args.num_train_epochs,
             per_device_train_batch_size=args.per_device_train_batch_size,
-            save_steps=500,
+            save_steps=4327,
         ),
         data_collator=NLPDataCollator(),
         train_dataset=train_dataset,

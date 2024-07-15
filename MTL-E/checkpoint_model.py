@@ -6,7 +6,7 @@ def save_model(model_name, multitask_model):
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_name)
     for task_name in ["bias", "stereotype"]:
         # Create the directory if it doesn't exist
-        save_dir = f"./{task_name}_model"
+        save_dir = f"./{task_name}_model/{model_name}"
         os.makedirs(save_dir, exist_ok=True)
 
         # Check if config.json does not exist and save the configuration file
